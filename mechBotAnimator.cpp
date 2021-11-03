@@ -504,22 +504,60 @@ void display3D()
 	glLoadIdentity();
 	gluLookAt(eyeX, eyeY, eyeZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
-	drawGround();
+	
 	draw3DSubdivisionCurve();
 	draw3DControlPoints();
+	drawGround();
 	drawBot();
 	drawCannon();
 	glutSwapBuffers();
+	
 }
 
 void draw3DSubdivisionCurve() 
 {
-	
+	// Subdivide the given curve
+	computeSubdivisionCurve(&subcurve);
+
+	int i = 0;
+
+	glColor3f(1.0, 0.0, 0.0);
+	glPushMatrix();
+	//glutSolidCube(1.0);
+	glBegin(GL_LINE_STRIP);
+	for (i = 0; i < subcurve.numCurvePoints; i++) {
+		glVertex3f(subcurve.curvePoints[i].x, 0.0, -subcurve.curvePoints[i].y);
+	}
+	glEnd();
+	glPopMatrix();
 }
 
 void draw3DControlPoints()
 {
-
+	int i, j;
+	for (i = 0; i < subcurve.numControlPoints; i++) {
+		glPushMatrix();
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glTranslatef(circles[i].circleCenter.x, 0, -circles[i].circleCenter.y);
+		// for the hoveredCircle, draw an outline and change its colour
+		if (i == hoveredCircle) {
+			// outline
+			glColor3f(1.0, 0.0, 0.0);
+			glBegin(GL_LINE_LOOP);
+			for (j = 0; j < numCirclePoints; j++) {
+				glVertex3f(circles[i].circlePoints[j].x, 0, -circles[i].circlePoints[j].y);
+			}
+			glEnd();
+			// colour change
+			glColor3f(0.0, 1.5, 1.0);
+		}
+		glBegin(GL_LINE_LOOP);
+		for (j = 0; j < numCirclePoints; j++) {
+			glVertex3f(circles[i].circlePoints[j].x, 0, -circles[i].circlePoints[j].y);
+		}
+		glEnd();
+		glPopMatrix();
+	}
 }
 
 GLfloat robotBody_mat_ambient[] = { 0.0f,0.0f,0.0f,1.0f };
