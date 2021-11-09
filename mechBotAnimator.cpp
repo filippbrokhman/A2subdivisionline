@@ -7,8 +7,14 @@
 #include "mechBotAnimator.h"
 #include "subdivcurve.h"
 
+#define M_PI       3.14159265358979323846   // pi
+
 enum BotType { CUBE, SPHERE, WHEEL};
 BotType botType = WHEEL;
+
+float newXPoint;
+float newYPoint;
+float rotateAngle;
 
 int numCirclePoints = 30;
 double circleRadius = 0.2;
@@ -491,11 +497,17 @@ void reshape3D(int w, int h)
 	gluLookAt(0.0, 6.0, 22.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 }
 
-
+bool stop = false;
 
 void animationHandler(int param)
 {
-	
+	if (!stop)
+	{
+		//recursive function that allows robot to move forward automatically with respect to inputs
+		
+		glutPostRedisplay();
+		glutTimerFunc(10, animationHandler, 0);
+	}
 }
 
 void display3D()
@@ -549,7 +561,7 @@ void draw3DControlPoints()
 			}
 			glEnd();
 			// colour change
-			glColor3f(0.0, 1.5, 1.0);
+			glColor3f(1.5, 0.0, 0.0);
 		}
 		glBegin(GL_LINE_LOOP);
 		for (j = 0; j < numCirclePoints; j++) {
@@ -575,15 +587,34 @@ void drawBot()
 		
 	if (botType == CUBE)
 	{
-		
+		newXPoint = subcurve.curvePoints[1].x - subcurve.curvePoints[0].x;
+		newYPoint = subcurve.curvePoints[1].y - subcurve.curvePoints[0].y;
+		rotateAngle = atan(newYPoint / newXPoint) * 180/M_PI;
+		glPushMatrix();
+		glTranslatef(subcurve.curvePoints[0].x, 0, -subcurve.curvePoints[0].y);
+		glRotatef(90, 0, 1, 0);
+		glRotatef(rotateAngle, 0, 1, 0);
+		glScalef(1, 1, 4);
+		glutSolidCube(1);
+		glPopMatrix();
 	}
 	else if (botType == SPHERE)
 	{
-	
+		glPushMatrix();
+		glTranslatef(subcurve.curvePoints[0].x, 0, -subcurve.curvePoints[0].y);
+		glutSolidSphere(0.9, 20, 20);
+		glPopMatrix();
 	}
 	else if (botType == WHEEL)
 	{
-
+		newXPoint = subcurve.curvePoints[1].x - subcurve.curvePoints[0].x;
+		newYPoint = subcurve.curvePoints[1].y - subcurve.curvePoints[0].y;
+		rotateAngle = atan(newYPoint / newXPoint) * 180 / M_PI;
+		glPushMatrix();
+		glTranslatef(subcurve.curvePoints[0].x, 0, -subcurve.curvePoints[0].y);
+				glRotatef(rotateAngle, 0, 1, 0);
+		glutSolidCylinder(0.8,1,20,20);
+		glPopMatrix();
 	}
 	glPopMatrix();
 }
