@@ -8,13 +8,18 @@
 #include "subdivcurve.h"
 
 #define M_PI       3.14159265358979323846   // pi
+#define FPS        1000 / 24
+#define Z_OFFSET   1
 
 enum BotType { CUBE, SPHERE, WHEEL};
-BotType botType = WHEEL;
+BotType botType;
+
+float cylinderRadius = 0.8;
+float cylinderHeight = 1;
 
 float newXPoint;
 float newYPoint;
-float rotateAngle;
+bool stop = false;
 
 int numCirclePoints = 30;
 double circleRadius = 0.2;
@@ -74,10 +79,12 @@ GLdouble eyeX = 0.0, eyeY = 6.0, eyeZ = 22.0;
 GLdouble zNear = 0.1, zFar = 40.0;
 GLdouble fov = 60.0;
 
+void forwardVector();
+
 int main(int argc, char* argv[])
 {
 	glutInit(&argc, (char **)argv); 
-
+	
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(glutWindowWidth,glutWindowHeight);
 	glutInitWindowPosition(50,100);  
@@ -384,23 +391,33 @@ void keyboardHandler(unsigned char key, int x, int y)
 		break;
 	case 'a':
 		// Add code to create timer and call animation handler
-		//......
+		stop = false;
+		glutTimerFunc(FPS, animationHandler, 0);
 		// Use this to set to 3D window and redraw it
 		glutSetWindow(window3D);
 		glutPostRedisplay();
 		break;
 	case 'r':
 		// reset object position at beginning of curve
-		//.......
+		curveIndex = 0;
+		forwardVector();
+		glutSetWindow(window3D);
+		glutPostRedisplay();
 		break;
 	case 'c':
 		botType = CUBE;
+		glutSetWindow(window3D);
+		glutPostRedisplay();
 		break;
 	case 's':
 		botType = SPHERE;
+		glutSetWindow(window3D);
+		glutPostRedisplay();
 		break;
 	case 'w':
 		botType = WHEEL;
+		glutSetWindow(window3D);
+		glutPostRedisplay();
 		break;
 		default:
 		break;
@@ -497,17 +514,28 @@ void reshape3D(int w, int h)
 	gluLookAt(0.0, 6.0, 22.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 }
 
-bool stop = false;
 
 void animationHandler(int param)
 {
 	if (!stop)
 	{
 		//recursive function that allows robot to move forward automatically with respect to inputs
-		
+		if (curveIndex == subcurve.numCurvePoints - 3) 
+		{
+			stop = true;
+		}
+		forwardVector();
+		curveIndex += 1;
 		glutPostRedisplay();
-		glutTimerFunc(10, animationHandler, 0);
+		glutTimerFunc(FPS, animationHandler, 0);
 	}
+}
+
+void forwardVector()
+{
+	newXPoint = subcurve.curvePoints[curveIndex + 1].x - subcurve.curvePoints[curveIndex].x;
+	newYPoint = subcurve.curvePoints[curveIndex + 1].y - subcurve.curvePoints[curveIndex].y;
+	angle = atan(newYPoint / newXPoint) * 180 / M_PI;
 }
 
 void display3D()
@@ -538,7 +566,7 @@ void draw3DSubdivisionCurve()
 	//glutSolidCube(1.0);
 	glBegin(GL_LINE_STRIP);
 	for (i = 0; i < subcurve.numCurvePoints; i++) {
-		glVertex3f(subcurve.curvePoints[i].x, 0.0, -subcurve.curvePoints[i].y);
+		glVertex3f(subcurve.curvePoints[i].x, 0.0, -subcurve.curvePoints[i].y * Z_OFFSET);
 	}
 	glEnd();
 	glPopMatrix();
@@ -550,7 +578,7 @@ void draw3DControlPoints()
 	for (i = 0; i < subcurve.numControlPoints; i++) {
 		glPushMatrix();
 		glColor3f(1.0f, 0.0f, 0.0f);
-		glTranslatef(circles[i].circleCenter.x, 0, -circles[i].circleCenter.y);
+		glTranslatef(circles[i].circleCenter.x, 0, -circles[i].circleCenter.y * Z_OFFSET);
 		// for the hoveredCircle, draw an outline and change its colour
 		if (i == hoveredCircle) {
 			// outline
@@ -587,33 +615,28 @@ void drawBot()
 		
 	if (botType == CUBE)
 	{
-		newXPoint = subcurve.curvePoints[1].x - subcurve.curvePoints[0].x;
-		newYPoint = subcurve.curvePoints[1].y - subcurve.curvePoints[0].y;
-		rotateAngle = atan(newYPoint / newXPoint) * 180/M_PI;
 		glPushMatrix();
-		glTranslatef(subcurve.curvePoints[0].x, 0, -subcurve.curvePoints[0].y);
+		glTranslatef(subcurve.curvePoints[curveIndex].x, 0, -subcurve.curvePoints[curveIndex].y * Z_OFFSET);
 		glRotatef(90, 0, 1, 0);
-		glRotatef(rotateAngle, 0, 1, 0);
-		glScalef(1, 1, 4);
+		glRotatef(angle, 0, 1, 0);
+		glScalef(1, 1, 3);
 		glutSolidCube(1);
 		glPopMatrix();
 	}
 	else if (botType == SPHERE)
 	{
 		glPushMatrix();
-		glTranslatef(subcurve.curvePoints[0].x, 0, -subcurve.curvePoints[0].y);
+		glTranslatef(subcurve.curvePoints[curveIndex].x, 0, -subcurve.curvePoints[curveIndex].y * Z_OFFSET);
 		glutSolidSphere(0.9, 20, 20);
 		glPopMatrix();
 	}
 	else if (botType == WHEEL)
 	{
-		newXPoint = subcurve.curvePoints[1].x - subcurve.curvePoints[0].x;
-		newYPoint = subcurve.curvePoints[1].y - subcurve.curvePoints[0].y;
-		rotateAngle = atan(newYPoint / newXPoint) * 180 / M_PI;
 		glPushMatrix();
-		glTranslatef(subcurve.curvePoints[0].x, 0, -subcurve.curvePoints[0].y);
-				glRotatef(rotateAngle, 0, 1, 0);
-		glutSolidCylinder(0.8,1,20,20);
+		glTranslatef(subcurve.curvePoints[curveIndex].x, 0, -subcurve.curvePoints[curveIndex].y * Z_OFFSET);
+		glRotatef(angle, 0, 1, 0);
+		glTranslatef(0, 0, -0.5 * cylinderHeight);
+		glutSolidCylinder(cylinderRadius,cylinderHeight,20,20);
 		glPopMatrix();
 	}
 	glPopMatrix();
