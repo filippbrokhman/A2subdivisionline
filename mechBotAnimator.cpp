@@ -12,7 +12,7 @@
 #define Z_OFFSET   1
 
 enum BotType { CUBE, SPHERE, WHEEL};
-BotType botType;
+BotType botType = WHEEL;
 
 float cylinderRadius = 0.8;
 float cylinderHeight = 1;
@@ -20,6 +20,8 @@ float cylinderHeight = 1;
 float newXPoint;
 float newYPoint;
 bool stop = false;
+int rotateAngle = 0;
+int rotationDirection = -1;
 
 int numCirclePoints = 30;
 double circleRadius = 0.2;
@@ -80,6 +82,7 @@ GLdouble zNear = 0.1, zFar = 40.0;
 GLdouble fov = 60.0;
 
 void forwardVector();
+void drawCubeTire();
 
 int main(int argc, char* argv[])
 {
@@ -400,6 +403,7 @@ void keyboardHandler(unsigned char key, int x, int y)
 	case 'r':
 		// reset object position at beginning of curve
 		curveIndex = 0;
+		rotateAngle = 0;
 		forwardVector();
 		glutSetWindow(window3D);
 		glutPostRedisplay();
@@ -526,6 +530,15 @@ void animationHandler(int param)
 		}
 		forwardVector();
 		curveIndex += 1;
+		rotateAngle += 15;
+		if (newXPoint < 0)
+		{
+			rotationDirection = 1;
+		}
+		else
+		{
+			rotationDirection = -1;
+		}
 		glutPostRedisplay();
 		glutTimerFunc(FPS, animationHandler, 0);
 	}
@@ -605,6 +618,14 @@ GLfloat robotBody_mat_specular[] = { 0.45f,0.55f,0.45f,1.0f };
 GLfloat robotBody_mat_diffuse[] = { 0.1f,0.35f,0.1f,1.0f };
 GLfloat robotBody_mat_shininess[] = { 20.0F };
 
+void drawCubeTire()
+{
+	glPushMatrix();
+	glTranslatef(0, 0.5 * cylinderRadius + 0.6, 0);
+	glutSolidCube(0.4);
+	glPopMatrix();
+}
+
 void drawBot() 
 {
 	glPushMatrix();
@@ -635,6 +656,8 @@ void drawBot()
 		glPushMatrix();
 		glTranslatef(subcurve.curvePoints[curveIndex].x, 0, -subcurve.curvePoints[curveIndex].y * Z_OFFSET);
 		glRotatef(angle, 0, 1, 0);
+		glRotatef(rotateAngle, 0, 0, rotationDirection);
+		drawCubeTire();
 		glTranslatef(0, 0, -0.5 * cylinderHeight);
 		glutSolidCylinder(cylinderRadius,cylinderHeight,20,20);
 		glPopMatrix();
@@ -688,7 +711,15 @@ void mouseButtonHandler3D(int button, int state, int x, int y)
 
 void mouseScrollWheelHandler3D(int button, int dir, int xMouse, int yMouse)
 {
-	
+	if (dir < 0)
+	{
+		eyeZ += 1.25;
+	}
+	else
+	{
+		eyeZ -= 1.25;
+	}
+	glutPostRedisplay();
 }
 
 void mouseMotionHandler3D(int x, int y)
